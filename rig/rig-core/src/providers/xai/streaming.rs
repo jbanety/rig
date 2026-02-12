@@ -181,12 +181,16 @@ where
                             }
 
                             ItemChunkKind::FunctionCallArgsDelta(delta) => {
+                                // Resolve item_id: prefer delta's own, fallback to parent chunk's
+                                let resolved_item_id = delta.item_id.clone()
+                                    .or_else(|| chunk.item_id.clone())
+                                    .unwrap_or_default();
                                 let internal_call_id = tool_call_internal_ids
-                                    .entry(delta.item_id.clone())
+                                    .entry(resolved_item_id.clone())
                                     .or_insert_with(|| nanoid::nanoid!())
                                     .clone();
                                 yield Ok(RawStreamingChoice::ToolCallDelta {
-                                    id: delta.item_id.clone(),
+                                    id: resolved_item_id,
                                     internal_call_id,
                                     content: streaming::ToolCallDeltaContent::Delta(delta.delta.clone()),
                                 });

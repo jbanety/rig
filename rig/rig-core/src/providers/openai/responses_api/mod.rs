@@ -920,6 +920,10 @@ pub enum OpenAIServiceTier {
     Auto,
     Default,
     Flex,
+    Priority,
+    /// Catch-all for unknown service tiers (e.g. new tiers added by providers).
+    #[serde(untagged)]
+    Other(String),
 }
 
 /// The amount of reasoning effort that will be used by a given model.

@@ -159,8 +159,10 @@ pub struct DeltaTextChunk {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DeltaTextChunkWithItemId {
-    pub item_id: String,
-    pub content_index: u64,
+    /// Optional because `#[serde(flatten)]` on parent `ItemChunk` may consume this field first.
+    pub item_id: Option<String>,
+    /// Optional because Copilot omits this field on function_call_arguments events.
+    pub content_index: Option<u64>,
     pub sequence_number: u64,
     pub delta: String,
 }
@@ -181,7 +183,8 @@ pub struct RefusalTextChunk {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ArgsTextChunk {
-    pub content_index: u64,
+    /// Optional because Copilot omits this field on function_call_arguments events.
+    pub content_index: Option<u64>,
     pub sequence_number: u64,
     pub arguments: serde_json::Value,
 }
@@ -349,12 +352,16 @@ where
                                     yield Ok(streaming::RawStreamingChoice::Message(delta.delta.clone()))
                                 }
                                 ItemChunkKind::FunctionCallArgsDelta(delta) => {
+                                    // Resolve item_id: prefer delta's own, fallback to parent chunk's
+                                    let resolved_item_id = delta.item_id.clone()
+                                        .or_else(|| chunk.item_id.clone())
+                                        .unwrap_or_default();
                                     let internal_call_id = tool_call_internal_ids
-                                        .entry(delta.item_id.clone())
+                                        .entry(resolved_item_id.clone())
                                         .or_insert_with(|| nanoid::nanoid!())
                                         .clone();
                                     yield Ok(streaming::RawStreamingChoice::ToolCallDelta {
-                                        id: delta.item_id.clone(),
+                                        id: resolved_item_id,
                                         internal_call_id,
                                         content: streaming::ToolCallDeltaContent::Delta(delta.delta.clone())
                                     })
