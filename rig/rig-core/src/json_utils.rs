@@ -58,6 +58,11 @@ pub mod stringified_json {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
+        // Handle empty string gracefully — Copilot sends arguments: "" on
+        // response.output_item.added before arguments are streamed.
+        if s.is_empty() {
+            return Ok(serde_json::Value::Object(serde_json::Map::new()));
+        }
         serde_json::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
