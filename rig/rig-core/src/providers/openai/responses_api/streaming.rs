@@ -286,7 +286,7 @@ where
 
                         let Ok(data) = data else {
                             let err = data.unwrap_err();
-                            debug!("Couldn't serialize data as StreamingCompletionResponse: {:?}", err);
+                            tracing::warn!("Couldn't serialize data as StreamingCompletionResponse: {:?}\nRaw SSE data: {}", err, &evt.data);
                             continue;
                         };
 
